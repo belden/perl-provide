@@ -1,0 +1,96 @@
+use strict;
+use warnings;
+package provide;
+
+use Exporter; # we shove it onto other people's @ISA, so we should load it ourselves
+
+sub import {
+  my ($class, @args) = @_;
+
+  my ($calling_class) = caller;
+
+  my ($match, @too_many) = parse(@args);
+  die "Couldn't parse @args, are you sure I know what I'm doing?" if !$match or @too_many;
+  load($match);
+
+  # set up the calling class as though it inherited from Exporter
+  {
+    no strict 'refs';
+    push @{"$calling_class\::ISA"}, qw(Exporter);
+    push @{"$calling_class\::EXPORT"}, @{"$match\::EXPORT"};
+  }
+
+  # export functions from $match to $calling_class so that users of $calling_class get them as
+  # though they were implemented in $calling_class, not in $match
+  {
+    no strict 'refs';
+    for my $function (@{"$match\::EXPORT"}) {
+      *{"$calling_class\::$function"} = \&{"$match\::$function"};
+    }
+  }
+}
+
+sub load {
+  my ($module) = @_;
+
+  if ($module =~ m{^[\w:]+}) {
+    local $@;
+    eval "use $module";
+    die $@ if $@;
+  } else {
+    die "hit $module but it doesn't look like a module name, refusing to load it";
+  }
+}
+
+sub parse {
+  my (@args) = @_;
+
+  my @clauses;
+
+  my @original_grammar = (
+    sub { $_ eq 'if' } => [
+      sub { $_ eq 'ge' } => [
+        sub { $] >= $_ } => sub { $_ },
+      ],
+    ],
+    sub { $_ eq 'else' } => sub { $_ },
+  );
+
+  my $tokenize;
+  $tokenize = sub {
+    my (@grammar) = @_;
+
+    # destructively process @args, filling values into $_
+    local $_;
+    while ($_ = shift(@args)) {
+
+      # march over @grammar in tuples
+      foreach (my $g = 0; $g < @grammar; $g+= 2) {
+        my ($matcher, $result) = @grammar[$g, $g + 1];
+
+        if ($matcher->()) {
+          if (ref($result) eq 'ARRAY') {   # i.e. recurse
+            $tokenize->(@$result);
+          } else {                         # terminal node: store the value expressed here, it's a module name
+            push @clauses, shift @args;
+          }
+
+          return;
+        } else {
+          shift @args;                     # throw away next thing in @args, it's a module name that we didn't hit
+          splice @original_grammar, 0, 2;  # throw away this failing outer condition/block from the grammer
+          die "You're probably doing something I didn't think of; please file a bug report with your 'use provide' line"
+            unless @original_grammar;
+          $tokenize->(@original_grammar);  # go handle the 'else' condition, if there is one
+        }
+      }
+    }
+  };
+
+  $tokenize->(@original_grammar);
+  undef $tokenize;
+
+  return @clauses;
+}
+
+1;

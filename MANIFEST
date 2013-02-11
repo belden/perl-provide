@@ -1,0 +1,7 @@
+lib/library.pm
+README
+MANIFEST
+MANIFEST.SKIP
+Makefile.PL
+t/some-test.t
+LICENSE
