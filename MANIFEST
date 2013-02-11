@@ -1,7 +1,11 @@
-lib/library.pm
-README
 MANIFEST
+t/provide.t
+t/lib/exporty1/pass.pm
+t/lib/Test/Easy.pm
+t/lib/exporty2/pass.pm
+README
 MANIFEST.SKIP
+lib/provide.pm
+.gitconfig
 Makefile.PL
-t/some-test.t
 LICENSE
