@@ -218,13 +218,13 @@ a break between Perl v5.12 and v5.13:
       done)
 
     __END__
-    5.006002	\%
-    5.008009	\%
-    5.010001	\%
-    5.012005	\[@%]
-    5.014003	+
-    5.016002	+
-    5.017008	+
+    5.006002  \%
+    5.008009  \%
+    5.010001  \%
+    5.012005  \[@%]
+    5.014003  +
+    5.016002  +
+    5.017008  +
 
 Aww, nerds! there's two difference prototypes in play here: \% and +. One valid option is to just
 give up on supporting older versions of Perl. Another is to implement your own version-specific
