@@ -4,7 +4,7 @@ package provide;
 
 use Exporter; # we shove it onto other people's @ISA, so we should load it ourselves
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 sub import {
   my ($class, @args) = @_;
@@ -192,7 +192,7 @@ But unlike the C<pop> that we're mimicking, our C<hash_pop> doesn't mutate the %
 
 =head2 hash_pop v1.1 - explicit pass by reference
 
-To mutate our subject %hash, we'll need pass by reference:
+To mutate our subject %hash, we'll need to pass by reference:
 
     sub hash_pop {
         my $hash = shift;
@@ -237,7 +237,7 @@ Sweet! All done, let's stick it on CPAN!
 =head2 Uh-oh, implementing CORE::-like functions means we have to respect the CORE
 
 Except: you're not done until you run it against every version of Perl you can shake a
-L<perlbrew|http://www.perlbrew.org> at. And when you go through and do that, you'll discover
+L<perlbrew|http://perlbrew.pl> at. And when you go through and do that, you'll discover
 a break between Perl v5.12 and v5.13:
 
     $ perlbrew list | \
@@ -373,7 +373,7 @@ L<Sam Merrit|http://twitter.com/torgomatic> coined the phrase "a ball of frighte
 L<Logan Bell|http://twitter.com/epochbell> practically dared me to release this. Well, maybe he would if I were to
 ask him.
 
-L<John Napiorkowski|http://jnap.com> originally put in my head the notion that, "A CPAN module is a unit of
+L<John Napiorkowski|https://github.com/jjn1056> originally put in my head the notion that, "A CPAN module is a unit of
 conversation between developers. It says, 'Here is a problem, and here is my take on how to solve it.'"
 
 L<My employer|http://shutterstock.com/jobs.mhtml>, L<Shutterstock, Inc.|http://shutterstock.com>, is a
