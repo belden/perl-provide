@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 13;
+use Test::More tests => 14;
 
 use lib grep { -d } qw(../lib ./lib ./t/lib);
 use Test::Easy qw(deep_ok);
@@ -103,3 +103,19 @@ deep_ok( \@exporty::ge::EXPORT, \@exporty2::pass::EXPORT, 'ge works' );
   );
 }
 deep_ok( \@exporty::gt::EXPORT, \@exporty2::pass::EXPORT, 'gt works' );
+
+
+# elsif
+{
+  use strict;
+  use warnings;
+  package exporty::elsif;
+  use provide (
+    if    => gt => $] => 'exporty2::fail',  # clearly $] is not > $]
+    elsif => eq => 0  => 'exporty2::fail',  # and clearly $] is not == 0
+    elsif => ne => $] => 'exporty2::fail',  # and clearly $] is not != $]
+    elsif => ge => $] => 'exporty2::pass',  # clearly $] is >= $]
+    else              => 'exporty2::fail',  # so we never hit here
+  );
+}
+deep_ok( \@exporty::elsif::EXPORT, \@exporty2::pass::EXPORT, 'elsif works' );

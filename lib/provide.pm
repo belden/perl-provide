@@ -4,15 +4,15 @@ package provide;
 
 use Exporter; # we shove it onto other people's @ISA, so we should load it ourselves
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
 sub import {
   my ($class, @args) = @_;
 
   my ($calling_class) = caller;
 
-  my ($match, @too_many) = parse(@args);
-  die "Couldn't parse @args, are you sure I know what I'm doing?" if !$match or @too_many;
+  my $match = pick_module_to_load(@args);
+  die "Couldn't parse @args, are you sure I know what I'm doing?" if !$match;
   load($match);
 
   # set up the calling class as though it inherited from Exporter
@@ -47,75 +47,46 @@ sub load {
   }
 }
 
-# I hope one day I look back on this code and understand how I should have written it.
-sub parse {
+sub pick_module_to_load {
   my (@args) = @_;
-  my @copy = @args;
 
-  my @clauses;
+  my @clauses = ([]);
 
-  my @grammar = (
-    sub { $_ eq 'if' } => [
-      sub { $_ eq 'ge' } => [
-        sub { $] >= $_ } => sub { $_ },
-      ],
-      sub { $_ eq 'gt' } => [
-        sub { $] > $_ } => sub { $_ },
-      ],
-      sub { $_ eq 'eq' } => [
-        sub { $] == $_ } => sub { $_ },
-      ],
-      sub { $_ eq 'ne' } => [
-        sub { $] != $_ } => sub { $_ },
-      ],
-      sub { $_ eq 'le' } => [
-        sub { $] <= $_ } => sub { $_ },
-      ],
-      sub { $_ eq 'lt' } => [
-        sub { $] < $_ } => sub { $_ },
-      ],
-    ],
-    sub { $_ eq 'else' } => sub { $_ },
+  foreach (@args) {
+    push @{$clauses[-1]}, $_;
+    push @clauses, [] if $clauses[-1][0] =~ /if|elsif/ && @{$clauses[-1]} == 4;
+  }
+
+  my %condition = (
+    gt => sub { $] >  shift() },
+    ge => sub { $] >= shift() },
+    eq => sub { $] == shift() },
+    ne => sub { $] != shift() },
+    le => sub { $] <= shift() },
+    lt => sub { $] <  shift() },
   );
 
-  my $tokenize;
-  $tokenize = sub {
-    my (@subgrammar) = @_;
+  foreach (@clauses) {
+    if (@$_ == 4) {
+      my ($if, $condition, $version, $module) = @$_;
 
-    # destructively process @args, filling values into $_
-    local $_;
-    while ($_ = shift(@args)) {
+      die "can't handle line: @$_\n" unless
+        ($if =~ /if|elsif/) &&
+        exists $condition{$condition} &&
+        $version =~ /^\d[\.\d]*$/ &&
+        looks_like_a_module($module);
 
-      # march over @subgrammar in tuples
-      foreach (my $sg = 0; $sg < @subgrammar; $sg+= 2) {
-        my ($matcher, $result) = @subgrammar[$sg, $sg + 1];
+      return $module if $condition{$condition}->($version);
+    } elsif (@$_ == 2) {
+      my ($else, $module) = @$_;
 
-        if ($matcher->()) {
-          if (ref($result) eq 'ARRAY') {   # ONE: recurse
-            $tokenize->(@$result);
-          } else {                         # TWO: terminal node: store the value expressed here, it's a module name
-            push @clauses, shift @args;
-          }
-          return;                          # if we hit a match we're all done with this @subgrammar
-        } else {
-          if ($sg + 2 < @subgrammar) {     # we recursed at ONE but didn't succeed: go on to the next item in @subgrammar
-            next;
-          } else {
-            shift @args;                   # throw away next thing in @args, it's a module name that we didn't hit
-            splice @grammar, 0, 2;         # throw away this failing outer condition/block from the grammer
-            die "You're probably doing something I didn't think of; please file a bug report with your 'use provide (@copy)' line"
-              unless @grammar;
-            $tokenize->(@grammar);         # go on to the next major branch of @grammar
-          }
-        }
-      }
+      die "can't handle line: @$_\n" unless
+        $else eq 'else' &&
+        looks_like_a_module($module);
+
+      return $module;
     }
-  };
-
-  $tokenize->(@grammar);
-  undef $tokenize;
-
-  return @clauses;
+  }
 }
 
 1;
@@ -352,14 +323,12 @@ In the event that the preceding C<if> condition is false, the C<else> RESULT wil
 
 =head1 BUGS
 
-This doesn't handle elsif conditions. It probably won't handle if+if+if conditions. Please report
-bugs on this project's L<Github issues page|http://github.com/belden/perl-provide/issues>.
+Please report bugs on this project's L<Github issues page|http://github.com/belden/perl-provide/issues>.
 
 =head1 APOLOGY
 
 Too often the explanation for crufty code is, "It seemed like a good idea at the time." To the contrary,
-this seems like a bad idea. It was a bit of fun to write, but I probably missed a great learning
-opportunity with my poor implementation.
+this seems like a strange idea.
 
 I really don't know if this will be useful to anyone at all. One of the challenges to us portraying the Perl
 community as actively growing is that there are so many well-tested implementations on CPAN to the various
@@ -374,7 +343,8 @@ L<Logan Bell|http://twitter.com/epochbell> practically dared me to release this.
 ask him.
 
 L<John Napiorkowski|https://github.com/jjn1056> originally put in my head the notion that, "A CPAN module is a unit of
-conversation between developers. It says, 'Here is a problem, and here is my take on how to solve it.'"
+conversation between developers. It says, 'Here is a problem, and here is my take on how to solve it.'" This module is
+the equivalent of me standing in a corner and mumbling to myself.
 
 L<My employer|http://shutterstock.com/jobs.mhtml>, L<Shutterstock, Inc.|http://shutterstock.com>, is a
 L<staunch supporter|http://code.shutterstock.com> of open-source software. It's a shame I've worked so hard
