@@ -12,6 +12,7 @@ WriteMakefile(
   META_MERGE => {
     resources => {
       bugtracker => 'https://github.com/belden/perl-provide/issues',
+      repository => 'https://github.com/belden/perl-provide',
     },
   },
   dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
