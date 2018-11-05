@@ -3,9 +3,10 @@ t/provide.t
 t/lib/exporty1/pass.pm
 t/lib/Test/Easy.pm
 t/lib/exporty2/pass.pm
-README
+README.pod
 MANIFEST.SKIP
 lib/provide.pm
 .gitconfig
 Makefile.PL
 LICENSE
+MYMETA.json
